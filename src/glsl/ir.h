@@ -28,6 +28,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <map>
+#include <string>
 
 #include "util/ralloc.h"
 #include "glsl_types.h"
@@ -36,6 +38,7 @@
 #include "ir_hierarchical_visitor.h"
 #include "main/mtypes.h"
 #include "main/macros.h"
+#include "program/prog_instruction.h"
 
 #ifdef __cplusplus
 
@@ -2460,6 +2463,8 @@ clone_ir_list(void *mem_ctx, exec_list *out, const exec_list *in);
 extern void
 _mesa_glsl_initialize_variables(exec_list *instructions,
 				struct _mesa_glsl_parse_state *state);
+
+extern const std::map<std::string, gl_inst_opcode>& _getBuiltinMap();
 
 extern void
 _mesa_glsl_initialize_builtin_functions();

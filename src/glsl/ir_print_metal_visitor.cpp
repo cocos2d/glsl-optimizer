@@ -28,8 +28,10 @@
 #include "ir_unused_structs.h"
 #include "loop_analysis.h"
 #include "program/hash_table.h"
+#include "program/prog_instruction.h"
 #include <math.h>
-
+#include <map>
+#include <string>
 
 static void print_type(string_buffer& buffer, ir_instruction* ir, const glsl_type *t, bool arraySize);
 static void print_type_post(string_buffer& buffer, const glsl_type *t, bool arraySize);
@@ -147,6 +149,7 @@ public:
 		globals = globals_;
 		mode = mode_;
 		state = state_;
+        findBuildinFunc = _getBuiltinMap();
 	}
 
 	virtual ~ir_print_metal_visitor()
@@ -199,6 +202,7 @@ public:
 	bool	inside_lhs;
 	bool	skipped_this_ir;
 	bool	previous_skipped;
+    std::map<std::string, gl_inst_opcode> findBuildinFunc;
 };
 
 
@@ -727,7 +731,7 @@ void ir_print_metal_visitor::visit(ir_function_signature *ir)
 			buffer.asprintf_append ("fragment ");
 		if (this->mode_whole == kPrintGlslVertex)
 			buffer.asprintf_append ("vertex ");
-		buffer.asprintf_append ("xlatMtlShaderOutput xlatMtlMain (xlatMtlShaderInput _mtl_i [[stage_in]], constant xlatMtlShaderUniform& _mtl_u [[buffer(0)]]");
+		buffer.asprintf_append ("xlatMtlShaderOutput xlatMtlMain (xlatMtlShaderInput _mtl_i [[stage_in]], constant xlatMtlShaderUniform& _mtl_u [[buffer(1)]]");
 		if (!ctx.paramsStr.empty())
 		{
 			buffer.asprintf_append ("%s", ctx.paramsStr.c_str());
@@ -1717,6 +1721,7 @@ void ir_print_metal_visitor::visit(ir_constant *ir)
 }
 
 
+
 void
 ir_print_metal_visitor::visit(ir_call *ir)
 {
@@ -1728,6 +1733,24 @@ ir_print_metal_visitor::visit(ir_call *ir)
 		buffer.asprintf_append ("//"); // for the ; that will follow (ugly, I know)
 		return;
 	}
+    
+    const char* pCalleeName = ir->callee_name();
+    
+    static bool bCreateSamplerInShader = false;
+    if(ir->use_builtin && bCreateSamplerInShader)
+    {
+        switch (findBuildinFunc[pCalleeName]) {
+            case OPCODE_TEX:
+            {
+                buffer.asprintf_append("constexpr sampler _mtl_xl_shadow_sampler(address::clamp_to_edge, filter::linear, compare_func::less_equal);\n");
+                indent();
+            }
+                break;
+            default:
+                printf("Unimplemented code....");
+                break;
+        }
+    }
 
 	if (ir->return_deref)
 	{
@@ -1735,15 +1758,65 @@ ir_print_metal_visitor::visit(ir_call *ir)
 		buffer.asprintf_append (" = ");
 	}
 
-   buffer.asprintf_append ("%s (", ir->callee_name());
-   bool first = true;
-   foreach_in_list(ir_instruction, inst, &ir->actual_parameters) {
-	  if (!first)
-		  buffer.asprintf_append (", ");
-      inst->accept(this);
-	  first = false;
-   }
-   buffer.asprintf_append (")");
+    
+    if(ir->use_builtin)
+    {
+        switch (findBuildinFunc[pCalleeName]) {
+            case OPCODE_TEX:
+            {
+                bool first = true;
+                foreach_in_list(ir_instruction, inst, &ir->actual_parameters) {
+                    if(first)
+                    {
+                        ir_variable *var = ((ir_dereference_variable*)inst)->variable_referenced();
+                        const char* pFuncName = var->name;
+                        buffer.asprintf_append("%s", pFuncName);
+                        if(bCreateSamplerInShader)
+                        {
+                            buffer.asprintf_append (".sample(_mtl_xl_shadow_sampler");
+                        }
+                        else
+                        {
+                            buffer.asprintf_append (".sample(_mtlsmp_%s", pFuncName);
+                        }
+                    }
+                    else//if (!first)
+                    {
+                        buffer.asprintf_append (", ");
+
+                        inst->accept(this);
+                    }
+                    first = false;
+                }
+             buffer.asprintf_append (")");
+            }
+                break;
+            default:
+            {
+                buffer.asprintf_append ("%s (", ir->callee_name());
+                bool first = true;
+                foreach_in_list(ir_instruction, inst, &ir->actual_parameters) {
+                    if (!first)
+                        buffer.asprintf_append (", ");
+                    inst->accept(this);
+                    first = false;
+                }
+                buffer.asprintf_append (")");
+            }
+                break;
+        }
+    }
+    else{
+       buffer.asprintf_append ("%s (", ir->callee_name());
+       bool first = true;
+       foreach_in_list(ir_instruction, inst, &ir->actual_parameters) {
+          if (!first)
+              buffer.asprintf_append (", ");
+          inst->accept(this);
+          first = false;
+       }
+       buffer.asprintf_append (")");
+    }
 }
 
 
