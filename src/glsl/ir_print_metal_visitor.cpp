@@ -30,7 +30,7 @@
 #include "program/hash_table.h"
 #include "program/prog_instruction.h"
 #include <math.h>
-#include <map>
+#include <unordered_map>
 #include <string>
 
 static void print_type(string_buffer& buffer, ir_instruction* ir, const glsl_type *t, bool arraySize);
@@ -149,7 +149,7 @@ public:
 		globals = globals_;
 		mode = mode_;
 		state = state_;
-        findBuildinFunc = _getBuiltinMap();
+        findBuiltinFunc = _getBuiltinMap();
 	}
 
 	virtual ~ir_print_metal_visitor()
@@ -202,7 +202,7 @@ public:
 	bool	inside_lhs;
 	bool	skipped_this_ir;
 	bool	previous_skipped;
-    std::map<std::string, gl_inst_opcode> findBuildinFunc;
+    std::unordered_map<std::string, gl_inst_opcode> findBuiltinFunc;
 };
 
 
@@ -1738,21 +1738,22 @@ ir_print_metal_visitor::visit(ir_call *ir)
     
     const char* pCalleeName = ir->callee_name();
     
-    static bool bCreateSamplerInShader = false;
-    if(ir->use_builtin && bCreateSamplerInShader)
-    {
-        switch (findBuildinFunc[pCalleeName]) {
-            case OPCODE_TEX:
-            {
-                buffer.asprintf_append("constexpr sampler _mtl_xl_shadow_sampler(address::clamp_to_edge, filter::linear, compare_func::less_equal);\n");
-                indent();
-            }
-                break;
-            default:
-                printf("Unimplemented code....");
-                break;
-        }
-    }
+    //no need since sampler is passed by program
+//    static bool bCreateSamplerInShader = false;
+//    if(ir->use_builtin && bCreateSamplerInShader)
+//    {
+//        switch (findBuiltinFunc[pCalleeName]) {
+//            case OPCODE_TEX:
+//            {
+//                buffer.asprintf_append("constexpr sampler _mtl_xl_shadow_sampler(address::clamp_to_edge, filter::linear, compare_func::less_equal);\n");
+//                indent();
+//            }
+//                break;
+//            default:
+//                printf("Unimplemented code....");
+//                break;
+//        }
+//    }
 
 	if (ir->return_deref)
 	{
@@ -1763,7 +1764,7 @@ ir_print_metal_visitor::visit(ir_call *ir)
     
     if(ir->use_builtin)
     {
-        switch (findBuildinFunc[pCalleeName]) {
+        switch (findBuiltinFunc[pCalleeName]) {
             case OPCODE_TEX:
             {
                 bool first = true;
@@ -1773,14 +1774,8 @@ ir_print_metal_visitor::visit(ir_call *ir)
                         ir_variable *var = ((ir_dereference_variable*)inst)->variable_referenced();
                         const char* pFuncName = var->name;
                         buffer.asprintf_append("%s", pFuncName);
-                        if(bCreateSamplerInShader)
-                        {
-                            buffer.asprintf_append (".sample(_mtl_xl_shadow_sampler");
-                        }
-                        else
-                        {
-                            buffer.asprintf_append (".sample(_mtlsmp_%s", pFuncName);
-                        }
+                        buffer.asprintf_append (".sample(_mtlsmp_%s", pFuncName);
+                       
                     }
                     else//if (!first)
                     {

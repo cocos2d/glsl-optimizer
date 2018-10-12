@@ -61,7 +61,7 @@
 #include "glsl_parser_extras.h"
 #include "program/prog_instruction.h"
 #include <limits>
-#include <map>
+#include <unordered_map>
 #include <string>
 
 #define M_PIf   ((float) M_PI)
@@ -442,7 +442,7 @@ public:
    gl_shader *shader;
    
    //
-   std::map<std::string, gl_inst_opcode> gFindBuildinFunc;
+   std::unordered_map<std::string, gl_inst_opcode> gFindBuiltinFunc;
 
 private:
    void *mem_ctx;
@@ -2383,8 +2383,8 @@ builtin_builder::create_builtins()
 void
 builtin_builder::createBuiltinMap()
 {
-    gFindBuildinFunc["texture2D"] = OPCODE_TEX;
-    gFindBuildinFunc["min"] = OPCODE_MIN;
+    gFindBuiltinFunc["texture2D"] = OPCODE_TEX;
+    gFindBuiltinFunc["min"] = OPCODE_MIN;
 }
 
 void
@@ -4654,9 +4654,9 @@ typedef int mtx_t;
 static builtin_builder builtins;
 static mtx_t builtins_lock = _MTX_INITIALIZER_NP;
 
-const std::map<std::string, gl_inst_opcode>& _getBuiltinMap()
+const std::unordered_map<std::string, gl_inst_opcode>& _getBuiltinMap()
 {
-    return builtins.gFindBuildinFunc;
+    return builtins.gFindBuiltinFunc;
 }
 
 /**

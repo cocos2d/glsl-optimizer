@@ -28,7 +28,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <map>
+#include <unordered_map>
 #include <string>
 
 #include "util/ralloc.h"
@@ -2464,7 +2464,7 @@ extern void
 _mesa_glsl_initialize_variables(exec_list *instructions,
 				struct _mesa_glsl_parse_state *state);
 
-extern const std::map<std::string, gl_inst_opcode>& _getBuiltinMap();
+extern const std::unordered_map<std::string, gl_inst_opcode>& _getBuiltinMap();
 
 extern void
 _mesa_glsl_initialize_builtin_functions();
