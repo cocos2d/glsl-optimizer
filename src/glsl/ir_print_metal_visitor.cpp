@@ -218,9 +218,9 @@ _mesa_print_ir_metal(exec_list *instructions,
 	ctx.prefixStr.asprintf_append ("#pragma clang diagnostic ignored \"-Wparentheses-equality\"\n");
 	ctx.prefixStr.asprintf_append ("using namespace metal;\n");
 
-	ctx.inputStr.asprintf_append("struct xlatMtlShaderInput {\n");
-	ctx.outputStr.asprintf_append("struct xlatMtlShaderOutput {\n");
-	ctx.uniformStr.asprintf_append("struct xlatMtlShaderUniform {\n");
+	ctx.inputStr.asprintf_append("struct xlatMtlShaderInput%d {\n", mode);
+	ctx.outputStr.asprintf_append("struct xlatMtlShaderOutput%d {\n", mode);
+	ctx.uniformStr.asprintf_append("struct xlatMtlShaderUniform%d {\n", mode);
 
 	// remove unused struct declarations
 	do_remove_unused_typedecls(instructions);
@@ -553,7 +553,9 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
 {
 	const char *const cent = (ir->data.centroid) ? "centroid " : "";
 	const char *const inv = (ir->data.invariant) ? "invariant " : "";
-	const char *const mode[ir_var_mode_count] = { "", "  ", "  ", "  ", "  ", "in ", "out ", "inout ", "", "", "" };
+    
+    //for matal, no support in, out, or inout storage qualifiers
+	const char *const mode[ir_var_mode_count] = { "", "  ", "  ", "  ", "  ", " ", "out ", "inout ", "", "", "" };
 
 	const char *const interp[] = { "", "smooth ", "flat ", "noperspective " };
 
@@ -731,7 +733,7 @@ void ir_print_metal_visitor::visit(ir_function_signature *ir)
 			buffer.asprintf_append ("fragment ");
 		if (this->mode_whole == kPrintGlslVertex)
 			buffer.asprintf_append ("vertex ");
-		buffer.asprintf_append ("xlatMtlShaderOutput xlatMtlMain (xlatMtlShaderInput _mtl_i [[stage_in]], constant xlatMtlShaderUniform& _mtl_u [[buffer(1)]]");
+		buffer.asprintf_append ("xlatMtlShaderOutput%d xlatMtlMain%d (xlatMtlShaderInput%d _mtl_i [[stage_in]], constant xlatMtlShaderUniform%d& _mtl_u [[buffer(1)]]", this->mode_whole, this->mode_whole,this->mode_whole,this->mode_whole);
 		if (!ctx.paramsStr.empty())
 		{
 			buffer.asprintf_append ("%s", ctx.paramsStr.c_str());
@@ -753,7 +755,7 @@ void ir_print_metal_visitor::visit(ir_function_signature *ir)
 	if (isMain)
 	{
 		// output struct
-		indent(); buffer.asprintf_append ("xlatMtlShaderOutput _mtl_o;\n");
+		indent(); buffer.asprintf_append ("xlatMtlShaderOutput%d _mtl_o;\n", this->mode_whole);
 
 		// insert postponed global assigments and variable declarations
 		assert (!globals->main_function_done);
