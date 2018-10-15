@@ -61,6 +61,8 @@
 #include "glsl_parser_extras.h"
 #include "program/prog_instruction.h"
 #include <limits>
+#include <unordered_map>
+#include <string>
 
 #define M_PIf   ((float) M_PI)
 #define M_PI_2f ((float) M_PI_2)
@@ -438,6 +440,9 @@ public:
     * signature allows matching_signature() to filter out the irrelevant ones.
     */
    gl_shader *shader;
+   
+   //
+   std::unordered_map<std::string, gl_inst_opcode> gFindBuiltinFunc;
 
 private:
    void *mem_ctx;
@@ -480,6 +485,9 @@ private:
 
    /** Create a new function and add the given signatures. */
    void add_function(const char *name, ...);
+    
+   //create a map for built-in function
+    void createBuiltinMap();
 
    enum image_function_flags {
       IMAGE_FUNCTION_EMIT_STUB = (1 << 0),
@@ -2367,6 +2375,16 @@ builtin_builder::create_builtins()
 #undef FIU
 #undef FIUB
 #undef FIU2_MIXED
+
+//create built-in map
+    createBuiltinMap();
+}
+
+void
+builtin_builder::createBuiltinMap()
+{
+    gFindBuiltinFunc["texture2D"] = OPCODE_TEX;
+    gFindBuiltinFunc["min"] = OPCODE_MIN;
 }
 
 void
@@ -4635,6 +4653,11 @@ typedef int mtx_t;
 /* The singleton instance of builtin_builder. */
 static builtin_builder builtins;
 static mtx_t builtins_lock = _MTX_INITIALIZER_NP;
+
+const std::unordered_map<std::string, gl_inst_opcode>& _getBuiltinMap()
+{
+    return builtins.gFindBuiltinFunc;
+}
 
 /**
  * External API (exposing the built-in module to the rest of the compiler):

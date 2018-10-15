@@ -1,0 +1,29 @@
+const char* vert = "\
+    attribute vec2 a_position; \
+    attribute vec2 a_texCoord; \
+    varying vec2 v_texCoord; \
+    uniform ivec2 viewportSize; \
+    void main() \
+    { \
+        vec2 pixelSpaceLocation = a_position / (vec2(viewportSize) / 2.0); \
+        gl_Position = vec4(pixelSpaceLocation, 0, 1); \
+        v_texCoord = a_texCoord; \
+    }";
+    
+const char* frag = "\
+    varying vec2 v_texCoord; \
+    uniform sampler2D u_texture; \
+    uniform sampler2D u_materialTexture; \
+    float blendSoftLight(float base, float blend) { \
+        return (blend<0.5)?(2.0*base*blend+base*base*(1.0-2.0*blend)):(sqrt(base)*(2.0*blend-1.0)+2.0*base*(1.0-blend)); \
+    }\
+    void main() \
+    { \
+        vec3 materialColor = texture2D(u_materialTexture, v_texCoord).rgb; \
+        vec3 srcColor = texture2D(u_texture, v_texCoord).rgb; \
+        vec3 resultColor; \
+        resultColor.r = blendSoftLight(materialColor.r,srcColor.r); \
+        resultColor.g= blendSoftLight(materialColor.g,srcColor.g); \
+        resultColor.b = blendSoftLight(materialColor.b,srcColor.b); \
+        gl_FragColor =  vec4(resultColor, 1.0);\
+    }";
