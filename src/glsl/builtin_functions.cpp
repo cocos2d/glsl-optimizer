@@ -2385,6 +2385,9 @@ builtin_builder::createBuiltinMap()
 {
     gFindBuiltinFunc["texture2D"] = OPCODE_TEX;
     gFindBuiltinFunc["min"] = OPCODE_MIN;
+    gFindBuiltinFunc["radians"] = OPCODE_RADIANS;
+    gFindBuiltinFunc["degrees"] = OPCODE_DEGREES;
+    gFindBuiltinFunc["matrixCompMult"] = OPCODE_MATRIX_COMP_MULT;
 }
 
 void

@@ -1,0 +1,14 @@
+const char* frag = "\
+    varying vec2 v_texCoord; \
+    uniform sampler2D u_texture; \
+    void main() \
+    { \
+        vec3 degree = vec3(45, 90, 180);\
+        vec3 toRadians = radians(degree);\
+        vec3 toDegrees = degrees(toRadians);\
+    \
+        mat3 m1 = mat3(1.0); \
+        mat3 m2 = mat3(2.0); \
+        mat3 m3 = matrixCompMult(m1, m2); \
+        gl_FragColor = texture2D(u_texture, v_texCoord); \
+    }";

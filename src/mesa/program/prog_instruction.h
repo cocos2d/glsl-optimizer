@@ -142,86 +142,89 @@
  * Program instruction opcodes for vertex, fragment and geometry programs.
  */
 typedef enum prog_opcode {
-                     /* ARB_vp   ARB_fp   NV_vp   NV_fp     GLSL */
-                     /*------------------------------------------*/
-   OPCODE_NOP = 0,   /*                                      X   */
-   OPCODE_ABS,       /*   X        X       1.1               X   */
-   OPCODE_ADD,       /*   X        X       X       X         X   */
-   OPCODE_ARL,       /*   X                X                 X   */
-   OPCODE_BGNLOOP,   /*                                     opt  */
-   OPCODE_BGNSUB,    /*                                     opt  */
-   OPCODE_BRK,       /*                    2                opt  */
-   OPCODE_CAL,       /*                    2       2        opt  */
-   OPCODE_CMP,       /*            X                         X   */
-   OPCODE_CONT,      /*                                     opt  */
-   OPCODE_COS,       /*            X       2       X         X   */
-   OPCODE_DDX,       /*                            X         X   */
-   OPCODE_DDY,       /*                            X         X   */
-   OPCODE_DP2,       /*                            2         X   */
-   OPCODE_DP3,       /*   X        X       X       X         X   */
-   OPCODE_DP4,       /*   X        X       X       X         X   */
-   OPCODE_DPH,       /*   X        X       1.1                   */
-   OPCODE_DST,       /*   X        X       X       X             */
-   OPCODE_ELSE,      /*                                     opt  */
-   OPCODE_END,       /*   X        X       X       X        opt  */
-   OPCODE_ENDIF,     /*                                     opt  */
-   OPCODE_ENDLOOP,   /*                                     opt  */
-   OPCODE_ENDSUB,    /*                                     opt  */
-   OPCODE_EX2,       /*   X        X       2       X         X   */
-   OPCODE_EXP,       /*   X                X                     */
-   OPCODE_FLR,       /*   X        X       2       X         X   */
-   OPCODE_FRC,       /*   X        X       2       X         X   */
-   OPCODE_IF,        /*                                     opt  */
-   OPCODE_KIL,       /*            X                         X   */
-   OPCODE_KIL_NV,    /*                            X         X   */
-   OPCODE_LG2,       /*   X        X       2       X         X   */
-   OPCODE_LIT,       /*   X        X       X       X             */
-   OPCODE_LOG,       /*   X                X                     */
-   OPCODE_LRP,       /*            X               X             */
-   OPCODE_MAD,       /*   X        X       X       X         X   */
-   OPCODE_MAX,       /*   X        X       X       X         X   */
-   OPCODE_MIN,       /*   X        X       X       X         X   */
-   OPCODE_MOV,       /*   X        X       X       X         X   */
-   OPCODE_MUL,       /*   X        X       X       X         X   */
-   OPCODE_NOISE1,    /*                                      X   */
-   OPCODE_NOISE2,    /*                                      X   */
-   OPCODE_NOISE3,    /*                                      X   */
-   OPCODE_NOISE4,    /*                                      X   */
-   OPCODE_PK2H,      /*                            X             */
-   OPCODE_PK2US,     /*                            X             */
-   OPCODE_PK4B,      /*                            X             */
-   OPCODE_PK4UB,     /*                            X             */
-   OPCODE_POW,       /*   X        X               X         X   */
-   OPCODE_RCP,       /*   X        X       X       X         X   */
-   OPCODE_RET,       /*                    2       2        opt  */
-   OPCODE_RFL,       /*                            X             */
-   OPCODE_RSQ,       /*   X        X       X       X         X   */
-   OPCODE_SCS,       /*            X                         X   */
-   OPCODE_SEQ,       /*                    2       X         X   */
-   OPCODE_SFL,       /*                    2       X             */
-   OPCODE_SGE,       /*   X        X       X       X         X   */
-   OPCODE_SGT,       /*                    2       X         X   */
-   OPCODE_SIN,       /*            X       2       X         X   */
-   OPCODE_SLE,       /*                    2       X         X   */
-   OPCODE_SLT,       /*   X        X       X       X         X   */
-   OPCODE_SNE,       /*                    2       X         X   */
-   OPCODE_SSG,       /*                    2                 X   */
-   OPCODE_STR,       /*                    2       X             */
-   OPCODE_SUB,       /*   X        X       1.1     X         X   */
-   OPCODE_SWZ,       /*   X        X                         X   */
-   OPCODE_TEX,       /*            X       3       X         X   */
-   OPCODE_TXB,       /*            X       3                 X   */
-   OPCODE_TXD,       /*                            X         X   */
-   OPCODE_TXL,       /*                    3       2         X   */
-   OPCODE_TXP,       /*            X                         X   */
-   OPCODE_TXP_NV,    /*                    3       X             */
-   OPCODE_TRUNC,     /*                                      X   */
-   OPCODE_UP2H,      /*                            X             */
-   OPCODE_UP2US,     /*                            X             */
-   OPCODE_UP4B,      /*                            X             */
-   OPCODE_UP4UB,     /*                            X             */
-   OPCODE_X2D,       /*                            X             */
-   OPCODE_XPD,       /*   X        X                             */
+                                /* ARB_vp   ARB_fp   NV_vp   NV_fp     GLSL */
+                                /*------------------------------------------*/
+   OPCODE_NOP = 0,              /*                                      X   */
+   OPCODE_ABS,                  /*   X        X       1.1               X   */
+   OPCODE_ADD,                  /*   X        X       X       X         X   */
+   OPCODE_ARL,                  /*   X                X                 X   */
+   OPCODE_BGNLOOP,              /*                                     opt  */
+   OPCODE_BGNSUB,               /*                                     opt  */
+   OPCODE_BRK,                  /*                    2                opt  */
+   OPCODE_CAL,                  /*                    2       2        opt  */
+   OPCODE_CMP,                  /*            X                         X   */
+   OPCODE_CONT,                 /*                                     opt  */
+   OPCODE_COS,                  /*            X       2       X         X   */
+   OPCODE_DDX,                  /*                            X         X   */
+   OPCODE_DDY,                  /*                            X         X   */
+   OPCODE_DP2,                  /*                            2         X   */
+   OPCODE_DP3,                  /*   X        X       X       X         X   */
+   OPCODE_DP4,                  /*   X        X       X       X         X   */
+   OPCODE_DPH,                  /*   X        X       1.1                   */
+   OPCODE_DST,                  /*   X        X       X       X             */
+   OPCODE_ELSE,                 /*                                     opt  */
+   OPCODE_END,                  /*   X        X       X       X        opt  */
+   OPCODE_ENDIF,                /*                                     opt  */
+   OPCODE_ENDLOOP,              /*                                     opt  */
+   OPCODE_ENDSUB,               /*                                     opt  */
+   OPCODE_EX2,                  /*   X        X       2       X         X   */
+   OPCODE_EXP,                  /*   X                X                     */
+   OPCODE_FLR,                  /*   X        X       2       X         X   */
+   OPCODE_FRC,                  /*   X        X       2       X         X   */
+   OPCODE_IF,                   /*                                     opt  */
+   OPCODE_KIL,                  /*            X                         X   */
+   OPCODE_KIL_NV,               /*                            X         X   */
+   OPCODE_LG2,                  /*   X        X       2       X         X   */
+   OPCODE_LIT,                  /*   X        X       X       X             */
+   OPCODE_LOG,                  /*   X                X                     */
+   OPCODE_LRP,                  /*            X               X             */
+   OPCODE_MAD,                  /*   X        X       X       X         X   */
+   OPCODE_MAX,                  /*   X        X       X       X         X   */
+   OPCODE_MIN,                  /*   X        X       X       X         X   */
+   OPCODE_MOV,                  /*   X        X       X       X         X   */
+   OPCODE_MUL,                  /*   X        X       X       X         X   */
+   OPCODE_NOISE1,               /*                                      X   */
+   OPCODE_NOISE2,               /*                                      X   */
+   OPCODE_NOISE3,               /*                                      X   */
+   OPCODE_NOISE4,               /*                                      X   */
+   OPCODE_PK2H,                 /*                            X             */
+   OPCODE_PK2US,                /*                            X             */
+   OPCODE_PK4B,                 /*                            X             */
+   OPCODE_PK4UB,                /*                            X             */
+   OPCODE_POW,                  /*   X        X               X         X   */
+   OPCODE_RCP,                  /*   X        X       X       X         X   */
+   OPCODE_RET,                  /*                    2       2        opt  */
+   OPCODE_RFL,                  /*                            X             */
+   OPCODE_RSQ,                  /*   X        X       X       X         X   */
+   OPCODE_SCS,                  /*            X                         X   */
+   OPCODE_SEQ,                  /*                    2       X         X   */
+   OPCODE_SFL,                  /*                    2       X             */
+   OPCODE_SGE,                  /*   X        X       X       X         X   */
+   OPCODE_SGT,                  /*                    2       X         X   */
+   OPCODE_SIN,                  /*            X       2       X         X   */
+   OPCODE_SLE,                  /*                    2       X         X   */
+   OPCODE_SLT,                  /*   X        X       X       X         X   */
+   OPCODE_SNE,                  /*                    2       X         X   */
+   OPCODE_SSG,                  /*                    2                 X   */
+   OPCODE_STR,                  /*                    2       X             */
+   OPCODE_SUB,                  /*   X        X       1.1     X         X   */
+   OPCODE_SWZ,                  /*   X        X                         X   */
+   OPCODE_TEX,                  /*            X       3       X         X   */
+   OPCODE_TXB,                  /*            X       3                 X   */
+   OPCODE_TXD,                  /*                            X         X   */
+   OPCODE_TXL,                  /*                    3       2         X   */
+   OPCODE_TXP,                  /*            X                         X   */
+   OPCODE_TXP_NV,               /*                    3       X             */
+   OPCODE_TRUNC,                /*                                      X   */
+   OPCODE_UP2H,                 /*                            X             */
+   OPCODE_UP2US,                /*                            X             */
+   OPCODE_UP4B,                 /*                            X             */
+   OPCODE_UP4UB,                /*                            X             */
+   OPCODE_X2D,                  /*                            X             */
+   OPCODE_XPD,                  /*   X        X                             */
+   OPCODE_RADIANS,              /*                                      2.0 */
+   OPCODE_DEGREES,              /*                                      2.0 */
+   OPCODE_MATRIX_COMP_MULT,     /*                                      2.0 */
    MAX_OPCODE
 } gl_inst_opcode;
 
