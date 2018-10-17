@@ -102,6 +102,7 @@ struct metal_print_context
 	, uniformStr(ralloc_strdup(buffer, ""))
 	, paramsStr(ralloc_strdup(buffer, ""))
 	, typedeclStr(ralloc_strdup(buffer, ""))
+    , builtFuncStr(ralloc_strdup(buffer, ""))
 	, writingParams(false)
 	, matrixCastsDone(false)
 	, matrixConstructorsDone(false)
@@ -121,6 +122,7 @@ struct metal_print_context
 	string_buffer uniformStr;
 	string_buffer paramsStr;
 	string_buffer typedeclStr;
+    string_buffer builtFuncStr;
 	bool writingParams;
 	bool matrixCastsDone;
 	bool matrixConstructorsDone;
@@ -193,6 +195,7 @@ public:
 	int indentation;
 	int expression_depth;
 	string_buffer& buffer;
+    //string_buffer& builtinStr;
 	global_print_tracker_metal* globals;
 	const _mesa_glsl_parse_state* state;
 	PrintGlslMode mode;
@@ -342,6 +345,7 @@ _mesa_print_ir_metal(exec_list *instructions,
 	ctx.prefixStr.asprintf_append("%s", ctx.inputStr.c_str());
 	ctx.prefixStr.asprintf_append("%s", ctx.outputStr.c_str());
 	ctx.prefixStr.asprintf_append("%s", ctx.uniformStr.c_str());
+    ctx.prefixStr.asprintf_append("%s", ctx.builtFuncStr.c_str());
 	ctx.prefixStr.asprintf_append("%s", ctx.str.c_str());
 
 	*outUniformsSize = ctx.uniformLocationCounter;
@@ -1786,6 +1790,90 @@ ir_print_metal_visitor::visit(ir_call *ir)
                     first = false;
                 }
              buffer.asprintf_append (")");
+            }
+                break;
+            case OPCODE_RADIANS:
+            {
+                string_buffer& pBuiltinFuncBuffer = ctx.builtFuncStr;
+                
+                const char* pBuiltinFuncName = ir->callee_name();
+                ir_variable *pReturnVar = ir->return_deref->variable_referenced();
+                print_type(pBuiltinFuncBuffer, pReturnVar, pReturnVar->type, false);
+                buffer.asprintf_append ("%s (", pBuiltinFuncName);
+                pBuiltinFuncBuffer.asprintf_append(" %s (", pBuiltinFuncName);
+              
+                
+                ir_instruction* inst = (ir_instruction*)ir->actual_parameters.head;
+                inst->accept(this);
+                ir_variable *pParameterVar = ((ir_dereference_variable*)inst)->variable_referenced();
+                const char* pParameterName = pParameterVar->name;
+                print_type(pBuiltinFuncBuffer, pParameterVar, pParameterVar->type, false);
+                pBuiltinFuncBuffer.asprintf_append(" %s", pParameterName);
+                
+                buffer.asprintf_append (")");
+                pBuiltinFuncBuffer.asprintf_append(") {\n");
+                pBuiltinFuncBuffer.asprintf_append("  float factor = M_PI_F/180;\n  return %s * factor;\n}\n", pParameterName);
+                break;
+            }
+            case OPCODE_DEGREES:
+            {
+                string_buffer& pBuiltinFuncBuffer = ctx.builtFuncStr;
+                ir_variable* pReturnVar = ir->return_deref->variable_referenced();
+                
+                const char* pBuiltinFuncName = ir->callee_name();
+                buffer.asprintf_append("%s (", pBuiltinFuncName);
+                print_type(pBuiltinFuncBuffer, pReturnVar, pReturnVar->type, false);
+                pBuiltinFuncBuffer.asprintf_append(" %s (", pBuiltinFuncName);
+                
+                ir_instruction* inst = (ir_instruction*)ir->actual_parameters.head;
+                inst->accept(this);
+                ir_variable* pParameterVar = ((ir_dereference_variable*)inst)->variable_referenced();
+                
+                print_type(pBuiltinFuncBuffer, pParameterVar, pParameterVar->type, false);
+                pBuiltinFuncBuffer.asprintf_append(" %s", pParameterVar->name);
+                
+                buffer.asprintf_append (")");
+                pBuiltinFuncBuffer.asprintf_append(") {\n");
+                pBuiltinFuncBuffer.asprintf_append("  float factor = 180/M_PI_F;\n  return %s * factor;\n}\n", pParameterVar->name);
+            }
+                break;
+            case OPCODE_MATRIX_COMP_MULT:
+            {
+                string_buffer& builtinFuncBuffer = ctx.builtFuncStr;
+                ir_variable* pReturnVar = ir->return_deref->variable_referenced();
+                buffer.asprintf_append("%s (", ir->callee_name());
+                print_type(builtinFuncBuffer, pReturnVar, pReturnVar->type, false);
+                builtinFuncBuffer.asprintf_append(" %s (", ir->callee_name());
+                
+                ir_instruction* instMatrixX = (ir_instruction*)ir->actual_parameters.head;
+                ir_instruction* instMatrixY = (ir_instruction*)instMatrixX->next;
+                instMatrixX->accept(this);
+                buffer.asprintf_append(", ");
+                instMatrixY->accept(this);
+                buffer.asprintf_append(")");
+                
+                ir_variable* pParameterMatrixX = ((ir_dereference_variable*)instMatrixX)->variable_referenced();
+                ir_variable* pParameterMatrixY = ((ir_dereference_variable*)instMatrixY)->variable_referenced();
+                
+                print_type(builtinFuncBuffer, pParameterMatrixX, pParameterMatrixX->type, false);
+                builtinFuncBuffer.asprintf_append(" %s, ", pParameterMatrixX->name);
+                print_type(builtinFuncBuffer, pParameterMatrixY, pParameterMatrixY->type, false);
+                builtinFuncBuffer.asprintf_append(" %s", pParameterMatrixY->name);
+                builtinFuncBuffer.asprintf_append(") {\n");
+                
+                print_type(builtinFuncBuffer, pReturnVar, pReturnVar->type, false);
+                builtinFuncBuffer.asprintf_append("  tempMat(0);\n");
+                for (unsigned i = 0; i < pReturnVar->type->vector_elements; i++)
+                {
+                    builtinFuncBuffer.asprintf_append("  ");
+                    for(unsigned j = 0; j < pReturnVar->type->matrix_columns; j++)
+                    {
+                        builtinFuncBuffer.asprintf_append("tempMat[%d][%d] = %s[%d][%d] * %s[%d][%d]; ", i, j, pParameterMatrixX->name, i, j, pParameterMatrixY->name, i, j);
+                    }
+                    builtinFuncBuffer.asprintf_append("\n");
+                }
+                builtinFuncBuffer.asprintf_append("  return tempMat;\n");
+                builtinFuncBuffer.asprintf_append("}\n");
             }
                 break;
             default:
