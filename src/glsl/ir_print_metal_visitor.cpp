@@ -111,6 +111,7 @@ struct metal_print_context
 	, attributeCounter(0)
 	, uniformLocationCounter(0)
 	, colorCounter(0)
+    , alignment(0)
 	{
 	}
 
@@ -131,6 +132,7 @@ struct metal_print_context
 	int attributeCounter;
 	int uniformLocationCounter;
 	int colorCounter;
+    int alignment;
 };
 
 
@@ -208,7 +210,7 @@ public:
     std::unordered_map<std::string, gl_inst_opcode> findBuiltinFunc;
 };
 
-
+static void get_metal_type_size(const glsl_type* type, glsl_precision prec, int& size, int& alignment);
 char*
 _mesa_print_ir_metal(exec_list *instructions,
 	    struct _mesa_glsl_parse_state *state,
@@ -233,6 +235,25 @@ _mesa_print_ir_metal(exec_list *instructions,
 	loop_state* ls = analyze_loop_variables(instructions);
 	if (ls->loop_found)
 		set_loop_controls(instructions, ls);
+    
+    {
+        int maxAlignment = 0, size = 0, align = 0;;
+        foreach_in_list(ir_instruction, ir, instructions)
+        {
+            if (ir->ir_type == ir_type_variable)
+            {
+                ir_variable *var = static_cast<ir_variable*>(ir);
+                if (var->data.mode != ir_var_uniform)
+                {
+                    continue;
+                }
+                
+                get_metal_type_size(var->type, (glsl_precision)var->data.precision, size, align);
+                maxAlignment = MAX2(maxAlignment, align);
+            }
+        }
+        ctx.alignment = maxAlignment;
+    }
 
 	foreach_in_list(ir_instruction, ir, instructions)
 	{
@@ -664,6 +685,15 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
 		int size, align;
 		get_metal_type_size(ir->type, (glsl_precision)ir->data.precision, size, align);
 
+        //uppack algiment
+        if(size && ctx.alignment > align)
+        {
+            const int asize = ir->type->is_array() ? ir->type->length : 1;
+            const int msize = ir->type->matrix_columns;
+            align = ctx.alignment;
+            size = align * asize * msize;
+        }
+        
 		int loc = ctx.uniformLocationCounter;
 		loc = (loc + align-1) & ~(align-1); // align it
 
