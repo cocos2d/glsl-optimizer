@@ -619,24 +619,24 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
 	if (this->mode != kPrintGlslNone && (ir->data.mode == ir_var_auto || ir->data.mode == ir_var_temporary))
 	{
 		assert (!this->globals->main_function_done);
-	    if(ir->data.mode == ir_var_auto)
+		if(ir->data.mode == ir_var_auto)
 		{
-		    skipped_this_ir = false;
-		    if(ir->data.read_only)
+			skipped_this_ir = false;
+			if(ir->data.read_only)
 			{
-			    isGlobalConstVariable = true;
-			    buffer.asprintf_append ("constant ");
+				isGlobalConstVariable = true;
+				buffer.asprintf_append ("constant ");
 			}
 		}
 		else
 		{
-		    this->globals->global_assignements.push_tail (new(this->globals->mem_ctx) ga_entry_metal(ir));
-		    skipped_this_ir = true;
-		    return;
+			this->globals->global_assignements.push_tail (new(this->globals->mem_ctx) ga_entry_metal(ir));
+			skipped_this_ir = true;
+			return;
 		}
 	}
-
-	// if this is a loop induction variable, do not print it
+	
+    // if this is a loop induction variable, do not print it
 	// (will be printed inside loop body)
 	if (!inside_loop_body)
 	{
@@ -649,31 +649,31 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
 		}
 	}
 
-    if(isFunctionParameter && (ir->data.mode == ir_var_function_out || ir->data.mode == ir_var_function_inout))
-    {
-        buffer.asprintf_append ("%s%s%s%s", cent, inv, interp[ir->data.interpolation], "thread ");
-    }
-    else
-    {
-	    buffer.asprintf_append ("%s%s%s%s", cent, inv, interp[ir->data.interpolation], mode[ir->data.mode]);
-    }
+	if(isFunctionParameter && (ir->data.mode == ir_var_function_out || ir->data.mode == ir_var_function_inout))
+	{
+		buffer.asprintf_append ("%s%s%s%s", cent, inv, interp[ir->data.interpolation], "thread ");
+	}
+	else
+	{
+		buffer.asprintf_append ("%s%s%s%s", cent, inv, interp[ir->data.interpolation], mode[ir->data.mode]);
+	}
     
 	print_type(buffer, ir, ir->type, false);
 	buffer.asprintf_append (" ");
 	if(isFunctionParameter)
-	    buffer.asprintf_append ("%s%s%s%s", cent, inv, interp[ir->data.interpolation], modeMetal[ir->data.mode]);
+		buffer.asprintf_append ("%s%s%s%s", cent, inv, interp[ir->data.interpolation], modeMetal[ir->data.mode]);
 
     print_var_name (ir);
 
-    if(ir->type->is_array() &&
+	if(ir->type->is_array() &&
 	   ((this->mode == kPrintGlslVertex && ir->data.mode == ir_var_shader_out) ||
 		(this->mode == kPrintGlslFragment && ir->data.mode == ir_var_shader_in)))
 	{
-	    print_unRollArray(buffer, ir);
+		print_unRollArray(buffer, ir);
 	}
 	else
 	{
-	    print_type_post(buffer, ir->type, false);
+		print_type_post(buffer, ir->type, false);
 	}
 
 	// special built-in variables
@@ -772,8 +772,8 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
 		switch (ir->type->base_type) {
 			case GLSL_TYPE_INT:
 			case GLSL_TYPE_FLOAT:
-                if(!isGlobalConstVariable)
-                    buffer.asprintf_append (" = 0");
+				if(!isGlobalConstVariable)
+					buffer.asprintf_append (" = 0");
 				break;
 			case GLSL_TYPE_BOOL:
 				buffer.asprintf_append (" = false");
@@ -796,7 +796,7 @@ void ir_print_metal_visitor::visit(ir_function_signature *ir)
 
 		if (!ir->parameters.is_empty())
 		{
-		    isFunctionParameter = true;
+			isFunctionParameter = true;
 			buffer.asprintf_append ("\n");
 
 			indentation++; previous_skipped = false;
@@ -816,14 +816,14 @@ void ir_print_metal_visitor::visit(ir_function_signature *ir)
 			isFunctionParameter = false;
 		}
         
-	    //append _mtl_i as a parameter for user-defined function
-	    {
-		    buffer.asprintf_append ("xlatMtlShaderInput%d _mtl_i, constant xlatMtlShaderUniform%d& _mtl_u", this->mode_whole, this->mode_whole);
+		//append _mtl_i as a parameter for user-defined function
+		{
+			buffer.asprintf_append ("xlatMtlShaderInput%d _mtl_i, constant xlatMtlShaderUniform%d& _mtl_u", this->mode_whole, this->mode_whole);
 		}
 	}
 	else
 	{
-        
+		
 		if (this->mode_whole == kPrintGlslFragment)
 			buffer.asprintf_append ("fragment ");
 		if (this->mode_whole == kPrintGlslVertex)
