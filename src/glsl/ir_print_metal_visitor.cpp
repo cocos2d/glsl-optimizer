@@ -35,6 +35,7 @@
 
 static void print_type(string_buffer& buffer, ir_instruction* ir, const glsl_type *t, bool arraySize);
 static void print_type_post(string_buffer& buffer, const glsl_type *t, bool arraySize);
+static void print_unRollArray(string_buffer& buffer, ir_variable* ir);
 
 
 struct ga_entry_metal : public exec_node
@@ -536,6 +537,21 @@ static void print_type_post(string_buffer& buffer, const glsl_type *t, bool arra
 	}
 }
 
+static void print_unRollArray(string_buffer& buffer, ir_variable* ir)
+{
+    buffer.asprintf_append ("0;\n");
+    for(int i = 1; i < ir->type->length; i++)
+    {
+        buffer.asprintf_append ("  ");
+        print_type(buffer, ir, ir->type, false);
+        buffer.asprintf_append (" ");
+        buffer.asprintf_append ("%s", ir->name);
+        buffer.asprintf_append ("%u", i);
+        if(i < ir->type->length - 1)
+            buffer.asprintf_append (";\n");
+    }
+}
+
 static void get_metal_type_size(const glsl_type* type, glsl_precision prec, int& size, int& alignment)
 {
 	if (prec == glsl_precision_undefined)
@@ -633,7 +649,7 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
 		}
 	}
 
-    if(isFunctionParameter)
+    if(isFunctionParameter && (ir->data.mode == ir_var_function_out || ir->data.mode == ir_var_function_inout))
     {
         buffer.asprintf_append ("%s%s%s%s",
                                 cent, inv, interp[ir->data.interpolation], "thread ");
@@ -650,7 +666,17 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
         buffer.asprintf_append ("%s%s%s%s",
                             cent, inv, interp[ir->data.interpolation], modeMetal[ir->data.mode]);
 	print_var_name (ir);
-	print_type_post(buffer, ir->type, false);
+    
+    if(ir->type->is_array() &&
+       ((this->mode == kPrintGlslVertex && ir->data.mode == ir_var_shader_out) ||
+       (this->mode == kPrintGlslFragment && ir->data.mode == ir_var_shader_in)))
+    {
+        print_unRollArray(buffer, ir);
+    }
+    else
+    {
+        print_type_post(buffer, ir->type, false);
+    }
 
 	// special built-in variables
 	if (!strcmp(ir->name, "gl_FragDepth"))
@@ -1472,10 +1498,19 @@ void ir_print_metal_visitor::visit(ir_dereference_variable *ir)
 
 void ir_print_metal_visitor::visit(ir_dereference_array *ir)
 {
-   ir->array->accept(this);
-   buffer.asprintf_append ("[");
-   ir->array_index->accept(this);
-   buffer.asprintf_append ("]");
+    ir->array->accept(this);
+    ir_variable *var = ((ir_dereference_variable*)ir->array)->variable_referenced();
+    if(this->mode == kPrintGlslNone && ((var->data.mode == ir_var_shader_out) || (var->data.mode == ir_var_shader_in)))
+    {
+        ir_constant* arrayIndex = (ir_constant*)ir->array_index;
+        buffer.asprintf_append("%u", arrayIndex->value.u[0]);
+    }
+    else
+    {
+       buffer.asprintf_append ("[");
+       ir->array_index->accept(this);
+       buffer.asprintf_append ("]");
+    }
 }
 
 
