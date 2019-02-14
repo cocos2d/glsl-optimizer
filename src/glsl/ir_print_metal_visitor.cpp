@@ -622,17 +622,17 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
 	    if(ir->data.mode == ir_var_auto)
 		{
 		    skipped_this_ir = false;
-	        if(ir->data.read_only)
-	        {
-		        isGlobalConstVariable = true;
-		        buffer.asprintf_append ("constant ");
-	        }
+		    if(ir->data.read_only)
+			{
+			    isGlobalConstVariable = true;
+			    buffer.asprintf_append ("constant ");
+			}
 		}
 		else
 		{
 		    this->globals->global_assignements.push_tail (new(this->globals->mem_ctx) ga_entry_metal(ir));
-	        skipped_this_ir = true;
-	        return;
+		    skipped_this_ir = true;
+		    return;
 		}
 	}
 
@@ -651,32 +651,30 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
 
     if(isFunctionParameter && (ir->data.mode == ir_var_function_out || ir->data.mode == ir_var_function_inout))
     {
-        buffer.asprintf_append ("%s%s%s%s",
-							cent, inv, interp[ir->data.interpolation], "thread ");
+        buffer.asprintf_append ("%s%s%s%s", cent, inv, interp[ir->data.interpolation], "thread ");
     }
     else
     {
-	    buffer.asprintf_append ("%s%s%s%s",
-						cent, inv, interp[ir->data.interpolation], mode[ir->data.mode]);
+	    buffer.asprintf_append ("%s%s%s%s", cent, inv, interp[ir->data.interpolation], mode[ir->data.mode]);
     }
     
 	print_type(buffer, ir, ir->type, false);
 	buffer.asprintf_append (" ");
 	if(isFunctionParameter)
-	    buffer.asprintf_append ("%s%s%s%s",
-                            cent, inv, interp[ir->data.interpolation], modeMetal[ir->data.mode]);
-	print_var_name (ir);
-    
+	    buffer.asprintf_append ("%s%s%s%s", cent, inv, interp[ir->data.interpolation], modeMetal[ir->data.mode]);
+
+    print_var_name (ir);
+
     if(ir->type->is_array() &&
-       ((this->mode == kPrintGlslVertex && ir->data.mode == ir_var_shader_out) ||
-       (this->mode == kPrintGlslFragment && ir->data.mode == ir_var_shader_in)))
-    {
+	   ((this->mode == kPrintGlslVertex && ir->data.mode == ir_var_shader_out) ||
+		(this->mode == kPrintGlslFragment && ir->data.mode == ir_var_shader_in)))
+	{
 	    print_unRollArray(buffer, ir);
-    }
-    else
-    {
+	}
+	else
+	{
 	    print_type_post(buffer, ir->type, false);
-    }
+	}
 
 	// special built-in variables
 	if (!strcmp(ir->name, "gl_FragDepth"))
@@ -818,10 +816,10 @@ void ir_print_metal_visitor::visit(ir_function_signature *ir)
 			isFunctionParameter = false;
 		}
         
-        //append _mtl_i as a parameter for user-defined function
-        {
-	        buffer.asprintf_append ("xlatMtlShaderInput%d _mtl_i, constant xlatMtlShaderUniform%d& _mtl_u", this->mode_whole, this->mode_whole);
-        }
+	    //append _mtl_i as a parameter for user-defined function
+	    {
+		    buffer.asprintf_append ("xlatMtlShaderInput%d _mtl_i, constant xlatMtlShaderUniform%d& _mtl_u", this->mode_whole, this->mode_whole);
+		}
 	}
 	else
 	{
