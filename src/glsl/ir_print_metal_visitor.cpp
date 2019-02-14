@@ -596,9 +596,9 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
 {
 	const char *const cent = (ir->data.centroid) ? "centroid " : "";
 	const char *const inv = (ir->data.invariant) ? "invariant " : "";
-    
-    //for matal, no support in, out, or inout storage qualifiers
-    const char *const modeMetal[ir_var_mode_count] = { "", "  ", "  ", "  ", "  ", " ", "& ", "& ", "", "", "" };
+
+	//for matal, no support in, out, or inout storage qualifiers
+	const char *const modeMetal[ir_var_mode_count] = { "", "  ", "  ", "  ", "  ", " ", "& ", "& ", "", "", "" };
 	const char *const mode[ir_var_mode_count] = { "", "  ", "  ", "  ", "  ", " ", "out ", "inout ", "", "", "" };
 
 	const char *const interp[] = { "", "smooth ", "flat ", "noperspective " };
@@ -615,25 +615,25 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
 	}
 	
 	// auto/temp variables in global scope are postponed to main function
-    bool isGlobalConstVariable = false;
+	bool isGlobalConstVariable = false;
 	if (this->mode != kPrintGlslNone && (ir->data.mode == ir_var_auto || ir->data.mode == ir_var_temporary))
 	{
 		assert (!this->globals->main_function_done);
-        if(ir->data.mode == ir_var_auto)
-        {
-            skipped_this_ir = false;
-            if(ir->data.read_only)
-            {
-                isGlobalConstVariable = true;
-                buffer.asprintf_append ("constant ");
-            }
-        }
-        else
-        {
-            this->globals->global_assignements.push_tail (new(this->globals->mem_ctx) ga_entry_metal(ir));
-            skipped_this_ir = true;
-            return;
-        }
+	    if(ir->data.mode == ir_var_auto)
+		{
+		    skipped_this_ir = false;
+	        if(ir->data.read_only)
+	        {
+		        isGlobalConstVariable = true;
+		        buffer.asprintf_append ("constant ");
+	        }
+		}
+		else
+		{
+		    this->globals->global_assignements.push_tail (new(this->globals->mem_ctx) ga_entry_metal(ir));
+	        skipped_this_ir = true;
+	        return;
+		}
 	}
 
 	// if this is a loop induction variable, do not print it
@@ -652,18 +652,18 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
     if(isFunctionParameter && (ir->data.mode == ir_var_function_out || ir->data.mode == ir_var_function_inout))
     {
         buffer.asprintf_append ("%s%s%s%s",
-                                cent, inv, interp[ir->data.interpolation], "thread ");
+							cent, inv, interp[ir->data.interpolation], "thread ");
     }
     else
     {
-        buffer.asprintf_append ("%s%s%s%s",
-							cent, inv, interp[ir->data.interpolation], mode[ir->data.mode]);
+	    buffer.asprintf_append ("%s%s%s%s",
+						cent, inv, interp[ir->data.interpolation], mode[ir->data.mode]);
     }
     
 	print_type(buffer, ir, ir->type, false);
 	buffer.asprintf_append (" ");
-    if(isFunctionParameter)
-        buffer.asprintf_append ("%s%s%s%s",
+	if(isFunctionParameter)
+	    buffer.asprintf_append ("%s%s%s%s",
                             cent, inv, interp[ir->data.interpolation], modeMetal[ir->data.mode]);
 	print_var_name (ir);
     
@@ -671,11 +671,11 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
        ((this->mode == kPrintGlslVertex && ir->data.mode == ir_var_shader_out) ||
        (this->mode == kPrintGlslFragment && ir->data.mode == ir_var_shader_in)))
     {
-        print_unRollArray(buffer, ir);
+	    print_unRollArray(buffer, ir);
     }
     else
     {
-        print_type_post(buffer, ir->type, false);
+	    print_type_post(buffer, ir->type, false);
     }
 
 	// special built-in variables
@@ -798,7 +798,7 @@ void ir_print_metal_visitor::visit(ir_function_signature *ir)
 
 		if (!ir->parameters.is_empty())
 		{
-            isFunctionParameter = true;
+		    isFunctionParameter = true;
 			buffer.asprintf_append ("\n");
 
 			indentation++; previous_skipped = false;
@@ -815,12 +815,12 @@ void ir_print_metal_visitor::visit(ir_function_signature *ir)
 
 			buffer.asprintf_append (",\n");
 			indent();
-            isFunctionParameter = false;
+			isFunctionParameter = false;
 		}
         
         //append _mtl_i as a parameter for user-defined function
         {
-            buffer.asprintf_append ("xlatMtlShaderInput%d _mtl_i, constant xlatMtlShaderUniform%d& _mtl_u", this->mode_whole, this->mode_whole);
+	        buffer.asprintf_append ("xlatMtlShaderInput%d _mtl_i, constant xlatMtlShaderUniform%d& _mtl_u", this->mode_whole, this->mode_whole);
         }
 	}
 	else
