@@ -148,7 +148,7 @@ public:
 		, skipped_this_ir(false)
 		, previous_skipped(false)
 		, mode_whole(mode_)
-        , isFunctionParameter(false)
+		, isFunctionParameter(false)
 	{
 		indentation = 0;
 		expression_depth = 0;
@@ -209,7 +209,7 @@ public:
 	bool	inside_lhs;
 	bool	skipped_this_ir;
 	bool	previous_skipped;
-    bool    isFunctionParameter;
+	bool    isFunctionParameter;
     std::unordered_map<std::string, gl_inst_opcode> findBuiltinFunc;
 };
 
