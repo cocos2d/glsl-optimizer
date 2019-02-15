@@ -35,6 +35,7 @@
 
 static void print_type(string_buffer& buffer, ir_instruction* ir, const glsl_type *t, bool arraySize);
 static void print_type_post(string_buffer& buffer, const glsl_type *t, bool arraySize);
+static void print_unRollArray(string_buffer& buffer, ir_variable* ir);
 
 
 struct ga_entry_metal : public exec_node
@@ -147,6 +148,7 @@ public:
 		, skipped_this_ir(false)
 		, previous_skipped(false)
 		, mode_whole(mode_)
+		, isFunctionParameter(false)
 	{
 		indentation = 0;
 		expression_depth = 0;
@@ -207,6 +209,7 @@ public:
 	bool	inside_lhs;
 	bool	skipped_this_ir;
 	bool	previous_skipped;
+	bool    isFunctionParameter;
     std::unordered_map<std::string, gl_inst_opcode> findBuiltinFunc;
 };
 
@@ -534,6 +537,21 @@ static void print_type_post(string_buffer& buffer, const glsl_type *t, bool arra
 	}
 }
 
+static void print_unRollArray(string_buffer& buffer, ir_variable* ir)
+{
+    buffer.asprintf_append ("0;\n");
+    for(int i = 1; i < ir->type->length; i++)
+    {
+        buffer.asprintf_append ("  ");
+        print_type(buffer, ir, ir->type, false);
+        buffer.asprintf_append (" ");
+        buffer.asprintf_append ("%s", ir->name);
+        buffer.asprintf_append ("%u", i);
+        if(i < ir->type->length - 1)
+            buffer.asprintf_append (";\n");
+    }
+}
+
 static void get_metal_type_size(const glsl_type* type, glsl_precision prec, int& size, int& alignment)
 {
 	if (prec == glsl_precision_undefined)
@@ -578,8 +596,9 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
 {
 	const char *const cent = (ir->data.centroid) ? "centroid " : "";
 	const char *const inv = (ir->data.invariant) ? "invariant " : "";
-    
-    //for matal, no support in, out, or inout storage qualifiers
+
+	//for matal, no support in, out, or inout storage qualifiers
+	const char *const modeMetal[ir_var_mode_count] = { "", "  ", "  ", "  ", "  ", " ", "& ", "& ", "", "", "" };
 	const char *const mode[ir_var_mode_count] = { "", "  ", "  ", "  ", "  ", " ", "out ", "inout ", "", "", "" };
 
 	const char *const interp[] = { "", "smooth ", "flat ", "noperspective " };
@@ -596,15 +615,28 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
 	}
 	
 	// auto/temp variables in global scope are postponed to main function
+	bool isGlobalConstVariable = false;
 	if (this->mode != kPrintGlslNone && (ir->data.mode == ir_var_auto || ir->data.mode == ir_var_temporary))
 	{
 		assert (!this->globals->main_function_done);
-		this->globals->global_assignements.push_tail (new(this->globals->mem_ctx) ga_entry_metal(ir));
-		skipped_this_ir = true;
-		return;
+		if(ir->data.mode == ir_var_auto)
+		{
+			skipped_this_ir = false;
+			if(ir->data.read_only)
+			{
+				isGlobalConstVariable = true;
+				buffer.asprintf_append ("constant ");
+			}
+		}
+		else
+		{
+			this->globals->global_assignements.push_tail (new(this->globals->mem_ctx) ga_entry_metal(ir));
+			skipped_this_ir = true;
+			return;
+		}
 	}
-
-	// if this is a loop induction variable, do not print it
+	
+    // if this is a loop induction variable, do not print it
 	// (will be printed inside loop body)
 	if (!inside_loop_body)
 	{
@@ -617,12 +649,32 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
 		}
 	}
 
-	buffer.asprintf_append ("%s%s%s%s",
-							cent, inv, interp[ir->data.interpolation], mode[ir->data.mode]);
+	if(isFunctionParameter && (ir->data.mode == ir_var_function_out || ir->data.mode == ir_var_function_inout))
+	{
+		buffer.asprintf_append ("%s%s%s%s", cent, inv, interp[ir->data.interpolation], "thread ");
+	}
+	else
+	{
+		buffer.asprintf_append ("%s%s%s%s", cent, inv, interp[ir->data.interpolation], mode[ir->data.mode]);
+	}
+    
 	print_type(buffer, ir, ir->type, false);
 	buffer.asprintf_append (" ");
-	print_var_name (ir);
-	print_type_post(buffer, ir->type, false);
+	if(isFunctionParameter)
+		buffer.asprintf_append ("%s%s%s%s", cent, inv, interp[ir->data.interpolation], modeMetal[ir->data.mode]);
+
+    print_var_name (ir);
+
+	if(ir->type->is_array() &&
+	   ((this->mode == kPrintGlslVertex && ir->data.mode == ir_var_shader_out) ||
+		(this->mode == kPrintGlslFragment && ir->data.mode == ir_var_shader_in)))
+	{
+		print_unRollArray(buffer, ir);
+	}
+	else
+	{
+		print_type_post(buffer, ir->type, false);
+	}
 
 	// special built-in variables
 	if (!strcmp(ir->name, "gl_FragDepth"))
@@ -720,7 +772,8 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
 		switch (ir->type->base_type) {
 			case GLSL_TYPE_INT:
 			case GLSL_TYPE_FLOAT:
-				buffer.asprintf_append (" = 0");
+				if(!isGlobalConstVariable)
+					buffer.asprintf_append (" = 0");
 				break;
 			case GLSL_TYPE_BOOL:
 				buffer.asprintf_append (" = false");
@@ -743,6 +796,7 @@ void ir_print_metal_visitor::visit(ir_function_signature *ir)
 
 		if (!ir->parameters.is_empty())
 		{
+			isFunctionParameter = true;
 			buffer.asprintf_append ("\n");
 
 			indentation++; previous_skipped = false;
@@ -757,12 +811,19 @@ void ir_print_metal_visitor::visit(ir_function_signature *ir)
 			}
 			indentation--;
 
-			buffer.asprintf_append ("\n");
+			buffer.asprintf_append (",\n");
 			indent();
+			isFunctionParameter = false;
+		}
+        
+		//append _mtl_i as a parameter for user-defined function
+		{
+			buffer.asprintf_append ("xlatMtlShaderInput%d _mtl_i, constant xlatMtlShaderUniform%d& _mtl_u", this->mode_whole, this->mode_whole);
 		}
 	}
 	else
 	{
+		
 		if (this->mode_whole == kPrintGlslFragment)
 			buffer.asprintf_append ("fragment ");
 		if (this->mode_whole == kPrintGlslVertex)
@@ -794,12 +855,13 @@ void ir_print_metal_visitor::visit(ir_function_signature *ir)
 		// insert postponed global assigments and variable declarations
 		assert (!globals->main_function_done);
 		globals->main_function_done = true;
-		foreach_in_list(ga_entry_metal, node, &globals->global_assignements)
-		{
-			ir_instruction* as = node->ir;
-			as->accept(this);
-			buffer.asprintf_append(";\n");
-		}
+//        skip postponed global assigments and variable declarations
+//        foreach_in_list(ga_entry_metal, node, &globals->global_assignements)
+//        {
+//            ir_instruction* as = node->ir;
+//            as->accept(this);
+//            buffer.asprintf_append(";\n");
+//        }
 	}
 
    foreach_in_list(ir_instruction, inst, &ir->body) {
@@ -1434,10 +1496,19 @@ void ir_print_metal_visitor::visit(ir_dereference_variable *ir)
 
 void ir_print_metal_visitor::visit(ir_dereference_array *ir)
 {
-   ir->array->accept(this);
-   buffer.asprintf_append ("[");
-   ir->array_index->accept(this);
-   buffer.asprintf_append ("]");
+    ir->array->accept(this);
+    ir_variable *var = ((ir_dereference_variable*)ir->array)->variable_referenced();
+    if(this->mode == kPrintGlslNone && ((var->data.mode == ir_var_shader_out) || (var->data.mode == ir_var_shader_in)))
+    {
+        ir_constant* arrayIndex = (ir_constant*)ir->array_index;
+        buffer.asprintf_append("%u", arrayIndex->value.u[0]);
+    }
+    else
+    {
+       buffer.asprintf_append ("[");
+       ir->array_index->accept(this);
+       buffer.asprintf_append ("]");
+    }
 }
 
 
@@ -1930,6 +2001,10 @@ ir_print_metal_visitor::visit(ir_call *ir)
           inst->accept(this);
           first = false;
        }
+       //append _mtl_i and _mtl_u to user-defined function
+        if(!first)
+            buffer.asprintf_append (", ");
+       buffer.asprintf_append("_mtl_i, _mtl_u");
        buffer.asprintf_append (")");
     }
 }
