@@ -741,7 +741,7 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
         if(size && ctx.alignment > align)
         {
             const int asize = ir->type->is_array() ? ir->type->length : 1;
-            const int msize = ir->type->matrix_columns;
+            const int msize = (ir->type->matrix_columns == 0) ? 1 : ir->type->matrix_columns;
             align = ctx.alignment;
             size = align * asize * msize;
         }
