@@ -372,7 +372,7 @@ _mesa_print_ir_metal(exec_list *instructions,
     ctx.prefixStr.asprintf_append("%s", ctx.builtFuncStr.c_str());
 	ctx.prefixStr.asprintf_append("%s", ctx.str.c_str());
 
-	*outUniformsSize = ctx.uniformLocationCounter;
+    *outUniformsSize = (ctx.uniformLocationCounter+ ctx.alignment-1) & ~(ctx.alignment-1);
 
 	return ralloc_strdup(buffer, ctx.prefixStr.c_str());
 }
@@ -737,15 +737,6 @@ void ir_print_metal_visitor::visit(ir_variable *ir)
 		int size, align;
 		get_metal_type_size(ir->type, (glsl_precision)ir->data.precision, size, align);
 
-        //uppack algiment
-        if(size && ctx.alignment > align)
-        {
-            const int asize = ir->type->is_array() ? ir->type->length : 1;
-            const int msize = (ir->type->matrix_columns == 0) ? 1 : ir->type->matrix_columns;
-            align = ctx.alignment;
-            size = align * asize * msize;
-        }
-        
 		int loc = ctx.uniformLocationCounter;
 		loc = (loc + align-1) & ~(align-1); // align it
 
